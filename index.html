@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0A0A">
+<title>Cara a Cara · Edição Casal KNOX</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0A0A; --card: #141414; --card2: #1b1b1b; --line: #2a2a2a;
+    --gold: #D4AF37; --gold2: #F3D77A; --gold3: #9C7C1E; --txt: #F5F1E6; --mut: #9a9384;
+    --ok: #4ADE80; --bad: #F87171;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--txt); font-family: Montserrat, system-ui, sans-serif; min-height: 100%; }
+  body { background: radial-gradient(ellipse at 50% -10%, rgba(212,175,55,.14), transparent 60%), var(--bg); background-attachment: fixed; }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 16px 16px 40px; }
+  .serif { font-family: "Playfair Display", Georgia, serif; }
+  .gold { color: var(--gold); }
+  .mut { color: var(--mut); }
+  .goldtxt { background: linear-gradient(90deg, var(--gold3), var(--gold2), var(--gold), var(--gold2), var(--gold3)); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 4s linear infinite; }
+  @keyframes shine { to { background-position: 200% center; } }
+
+  .logo { text-align: center; margin: 28px 0 26px; }
+  .logo small { letter-spacing: .45em; font-weight: 700; color: var(--mut); font-size: .8rem; }
+  .logo h1 { font-family: "Playfair Display", serif; font-style: italic; font-size: 2.6rem; margin: 6px 0 2px; line-height: 1.05; }
+  .logo .knox { display: inline-block; letter-spacing: .6em; padding: 6px 4px 6px 16px; border: 1px solid var(--gold); color: var(--gold); font-weight: 800; font-size: .9rem; margin-top: 10px; }
+
+  label.fld { display: block; font-weight: 600; color: var(--mut); font-size: .9rem; margin: 0 0 14px; }
+  input.inp { display: block; width: 100%; margin-top: 6px; background: var(--card); border: 1.5px solid var(--line); color: var(--txt);
+    font-size: 1.25rem; padding: 16px 18px; border-radius: 16px; outline: none; font-family: inherit; transition: border-color .2s; }
+  input.inp:focus { border-color: var(--gold); }
+  input.code-in { text-transform: uppercase; letter-spacing: .4em; text-align: center; font-weight: 800; }
+
+  .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 64px; padding: 14px 20px;
+    border-radius: 18px; font-size: 1.2rem; font-weight: 800; border: 1.5px solid var(--gold); background: transparent; color: var(--gold);
+    cursor: pointer; font-family: inherit; transition: transform .12s, filter .2s, opacity .2s; text-align: center; }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .35; pointer-events: none; }
+  .btn.solid { background: linear-gradient(135deg, var(--gold2), var(--gold) 45%, var(--gold3)); color: #0A0A0A; border-color: transparent; box-shadow: 0 8px 28px rgba(212,175,55,.25); }
+  .btn.dim { border-color: var(--line); color: var(--txt); }
+  .btn.sm { min-height: 48px; font-size: 1rem; border-radius: 14px; }
+  .btn.huge { min-height: 96px; font-size: 1.6rem; border-radius: 22px; }
+  .stack > * + * { margin-top: 12px; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 20px; }
+  .card.goldline { border-color: rgba(212,175,55,.45); }
+  .sep { display: flex; align-items: center; gap: 12px; color: var(--mut); font-size: .85rem; margin: 22px 0 14px; }
+  .sep::before, .sep::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  .topbar { position: sticky; top: 0; z-index: 20; background: rgba(10,10,10,.92); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(212,175,55,.25); }
+  .topbar .in { max-width: 520px; margin: 0 auto; padding: 10px 16px 12px; }
+  .bar { height: 8px; background: #222; border-radius: 99px; overflow: hidden; margin-top: 8px; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold3), var(--gold2)); border-radius: 99px; transition: width .8s cubic-bezier(.2,.8,.2,1); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot.on { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+  .dot.off { background: var(--bad); animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+
+  .tiles { display: flex; gap: 10px; justify-content: center; margin: 14px 0; }
+  .tiles span { width: 62px; height: 76px; display: grid; place-items: center; font-size: 2.4rem; font-weight: 800; color: var(--gold);
+    border: 2px solid var(--gold); border-radius: 14px; background: #120f05; animation: pop .5s backwards; }
+  .tiles span:nth-child(2) { animation-delay: .08s } .tiles span:nth-child(3) { animation-delay: .16s } .tiles span:nth-child(4) { animation-delay: .24s }
+  .linkbox { font-size: .85rem; word-break: break-all; background: var(--card2); border: 1px dashed var(--line); padding: 12px; border-radius: 12px; color: var(--mut); }
+
+  .question { font-family: "Playfair Display", serif; font-size: 2.1rem; line-height: 1.15; text-align: center; margin: 10px 0 24px; animation: pop .45s; }
+  .pill { display: inline-block; padding: 6px 14px; border-radius: 99px; border: 1px solid rgba(212,175,55,.5); color: var(--gold); font-size: .8rem; font-weight: 700; letter-spacing: .08em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { padding: 10px 14px; border-radius: 99px; border: 1.5px solid var(--line); color: var(--txt); background: var(--card2); font-weight: 600; font-size: .95rem; cursor: pointer; }
+  .chip.on { border-color: var(--gold); color: #0A0A0A; background: var(--gold); }
+
+  .mode { text-align: left; cursor: pointer; transition: transform .15s, border-color .2s; }
+  .mode:active { transform: scale(.98); }
+  .mode:hover { border-color: var(--gold); }
+  .mode h3 { font-family: "Playfair Display", serif; font-size: 1.6rem; margin: 4px 0 6px; color: var(--gold); }
+
+  .reveal { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .reveal .card { text-align: center; animation: flip .6s backwards; }
+  .reveal .card:nth-child(2) { animation-delay: .25s; }
+  @keyframes flip { from { transform: rotateY(90deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  .verdict { text-align: center; font-family: "Playfair Display", serif; font-size: 2rem; margin: 18px 0; animation: pop .5s .4s backwards; }
+
+  .hist { max-height: 38vh; overflow-y: auto; }
+  .hist .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .hist .row:last-child { border-bottom: 0; }
+  .ans { font-weight: 800; font-size: .8rem; padding: 5px 10px; border-radius: 99px; white-space: nowrap; }
+  .ans.sim { background: rgba(74,222,128,.15); color: var(--ok); }
+  .ans.nao { background: rgba(248,113,113,.15); color: var(--bad); }
+  .ans.talvez { background: rgba(212,175,55,.15); color: var(--gold); }
+  .ans.wait { background: #222; color: var(--mut); }
+
+  .spinner { width: 46px; height: 46px; border: 4px solid #2a2a2a; border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; margin: 18px auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .heartbeat { font-size: 3.4rem; text-align: center; animation: hb 1.2s infinite; }
+  @keyframes hb { 0%,100% { transform: scale(1); } 15% { transform: scale(1.18); } 30% { transform: scale(1); } 45% { transform: scale(1.12); } }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.05); } to { transform: scale(1); opacity: 1; } }
+  .fade { animation: fadeUp .35s; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .shake { animation: shake .5s; }
+  @keyframes shake { 20%,60% { transform: translateX(-8px); } 40%,80% { transform: translateX(8px); } }
+
+  #fx { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(circle, rgba(0,0,0,.55), rgba(0,0,0,.2)); }
+  #fx.show { opacity: 1; }
+  #fx .t { font-family: "Playfair Display", serif; font-style: italic; font-size: clamp(2.6rem, 12vw, 4.6rem); text-align: center; padding: 0 16px; text-shadow: 0 6px 40px rgba(212,175,55,.6); }
+  #fx.show .t { animation: fxpop .9s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes fxpop { from { transform: scale(.2) rotate(-8deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  #confetti { position: fixed; inset: 0; z-index: 70; pointer-events: none; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 140%); z-index: 80; background: #1c1a12; border: 1px solid var(--gold); color: var(--txt);
+    padding: 14px 20px; border-radius: 16px; font-weight: 600; transition: transform .35s; max-width: calc(100% - 32px); text-align: center; }
+  #toast.show { transform: translate(-50%, 0); }
+  .banner { background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.4); color: #fecaca; padding: 10px 14px; border-radius: 14px; font-size: .9rem; margin-bottom: 14px; }
+  img.cert { width: 100%; border-radius: 16px; box-shadow: 0 20px 60px rgba(212,175,55,.18); border: 1px solid rgba(212,175,55,.3); }
+  .masked { filter: blur(8px); user-select: none; }
+</style>
+</head>
+<body>
+<div id="top"></div>
+<main id="app" class="wrap"></main>
+<div id="fx"><div class="t goldtxt"></div></div>
+<canvas id="confetti"></canvas>
+<div id="toast"></div>
+
+<script>
+// =====================================================================
+//  CARA A CARA · EDIÇÃO CASAL KNOX
+//  Multiplayer: PeerJS (WebRTC P2P). Quem cria a sala é o "host" e guarda
+//  o estado oficial; o convidado envia ações e recebe o estado de volta.
+//  Também existe o modo "mesmo celular", que funciona 100% offline.
+// =====================================================================
+
+const PFX = 'knox-casal-v1-';
+const ROUNDS_M1 = 10;
+const MAX_Q = 20;
+
+const Q_MAIS = [
+  'Quem é mais ciumento(a)?', 'Quem é mais romântico(a)?', 'Quem demora mais pra se arrumar?', 'Quem é mais teimoso(a)?',
+  'Quem falou "eu te amo" primeiro?', 'Quem é mais dorminhoco(a)?', 'Quem come mais?', 'Quem é mais bagunceiro(a)?',
+  'Quem é mais engraçado(a)?', 'Quem chora mais fácil em filme?', 'Quem é mais carinhoso(a)?', 'Quem pede desculpa primeiro?',
+  'Quem gasta mais dinheiro?', 'Quem é mais esquecido(a)?', 'Quem manda mais na relação?', 'Quem é mais medroso(a)?',
+  'Quem dança pior?', 'Quem stalkeia mais nas redes?', 'Quem é mais dramático(a)?', 'Quem é mais organizado(a)?',
+  'Quem acorda de pior humor?', 'Quem rouba o cobertor?', 'Quem sempre escolhe o restaurante?', 'Quem é mais competitivo(a)?',
+  'Quem manda mais áudio longo?', 'Quem é mais fofoqueiro(a)?', 'Quem se apaixonou primeiro?', 'Quem é mais paciente?',
+  'Quem é mais aventureiro(a)?', 'Quem é mais preguiçoso(a)?', 'Quem canta mais no chuveiro?', 'Quem faz mais surpresas?',
+  'Quem é mais vaidoso(a)?', 'Quem sente mais saudade?', 'Quem demora mais pra responder mensagem?', 'Quem é mais carente?',
+  'Quem cozinha melhor?', 'Quem é mais sincero(a)?', 'Quem faz mais planos pro futuro?', 'Quem ganha as discussões?',
+  'Quem é mais grudento(a)?', 'Quem tira mais foto?', 'Quem perdoa mais rápido?', 'Quem é mais nerd?'
+];
+
+const IDEAS = {
+  'Pessoa': ['Anitta', 'Neymar', 'Silvio Santos', 'Xuxa', 'Ivete Sangalo', 'Taylor Swift', 'Cristiano Ronaldo', 'Pelé', 'Shakira', 'Faustão', 'Gisele Bündchen', 'Beyoncé'],
+  'Lugar': ['Paris', 'Disney', 'Rio de Janeiro', 'Fernando de Noronha', 'Japão', 'Nova York', 'Gramado', 'Cinema', 'Shopping', 'Academia', 'Praia', 'Egito'],
+  'Objeto': ['Celular', 'Guarda-chuva', 'Escova de dentes', 'Travesseiro', 'Óculos de sol', 'Violão', 'Geladeira', 'Chinelo', 'Controle remoto', 'Batom', 'Fone de ouvido'],
+  'Filme/Série': ['Titanic', 'Friends', 'Harry Potter', 'O Rei Leão', 'Stranger Things', 'Vingadores', 'Shrek', 'La Casa de Papel', 'Toy Story', 'Diário de uma Paixão'],
+  'Nossas coisas': ['Nosso primeiro encontro', 'Nossa música', 'Nosso primeiro beijo', 'Um apelido nosso', 'Nossa comida favorita', 'A viagem dos sonhos', 'Nossa primeira briga']
+};
+const CODE_WORDS = ['AMOR', 'LOVE', 'DOCE', 'LUAR', 'ROSA', 'MIMO', 'XOXO', 'KISS', 'CHER', 'MEUS', 'NOSS', 'BEMS', 'FOFO', 'MELO', 'OURO', 'LUXO', 'JOIA', 'KNOX'];
+
+// ---------- utilidades ----------
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function store(kind, key, val) { try { const st = kind === 's' ? sessionStorage : localStorage; if (val === undefined) return st.getItem(key); if (val === null) st.removeItem(key); else st.setItem(key, val); } catch (e) { return null; } }
+function genCode(randomOnly) {
+  if (!randomOnly && Math.random() < .7) return pick(CODE_WORDS);
+  const L = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 4; i++) c += L[Math.floor(Math.random() * L.length)]; return c;
+}
+function baseUrl() { return location.href.split(/[?#]/)[0]; }
+function roomLink() { return baseUrl() + '?sala=' + net.code; }
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+
+// ---------- estado global ----------
+let S = null;          // estado do jogo (compartilhado)
+let role = 'none';     // 'host' | 'guest' | 'local' | 'none'
+let me = 0;            // 0 = quem criou, 1 = convidado(a)
+const net = { peer: null, conn: null, connected: false, code: null, status: '', retry: null };
+const ui = { lastFx: null, hand: null, cat: 'Pessoa', peek: false, certKey: null, certUrl: null };
+
+function newState(a, b) {
+  return { v: 0, names: [a, b], phase: 'lobby', stats: { m1: { match: 0, total: 0 }, m2: { win: 0, total: 0 } },
+    m1: null, m2: null, m2th: 0, last: null, fx: null, fxId: 0 };
+}
+function affinity(s = S) {
+  const t = s.stats.m1.total + s.stats.m2.total;
+  if (!t) return null;
+  return Math.round((s.stats.m1.match + s.stats.m2.win) / t * 100);
+}
+function fx(s, k) { s.fxId++; s.fx = { id: s.fxId, k }; }
+function m2init(s, th) { s.m2 = { thinker: th, cat: '', secret: '', qs: [], st: 'secret', guess: '', won: null }; s.m2th = th; }
+
+// ---------- regras (rodam só no host / modo local) ----------
+function reduce(s, a) {
+  const f = a.from;
+  switch (a.t) {
+    case 'mode':
+      if (a.mode === 'm1') { s.phase = 'm1'; s.m1 = { order: shuffle(Q_MAIS.map((_, i) => i)).slice(0, ROUNDS_M1), i: 0, ans: [null, null], rev: false, match: 0 }; }
+      else if (a.mode === 'm2') { s.phase = 'm2'; m2init(s, s.m2 ? 1 - s.m2.thinker : s.m2th); }
+      else if (a.mode === 'final') s.phase = 'final';
+      else if (a.mode === 'lobby') s.phase = 'lobby';
+      break;
+    case 'reset': {
+      const n = newState(s.names[0], s.names[1]); n.fxId = s.fxId; Object.assign(s, n); break;
+    }
+    case 'm1ans': {
+      const m = s.m1; if (!m || m.rev || m.i !== a.i || m.ans[f] != null) break;
+      m.ans[f] = a.v;
+      if (m.ans[0] != null && m.ans[1] != null) {
+        m.rev = true; const ok = m.ans[0] === m.ans[1];
+        s.stats.m1.total++; if (ok) { s.stats.m1.match++; m.match++; }
+        fx(s, ok ? 'match' : 'miss');
+      }
+      break;
+    }
+    case 'm1next': {
+      const m = s.m1; if (!m || !m.rev || m.i !== a.i) break;
+      if (m.i + 1 >= m.order.length) { s.last = `Quem é mais: combinaram ${m.match} de ${m.order.length}`; s.phase = 'lobby'; fx(s, 'roundEnd'); }
+      else { m.i++; m.ans = [null, null]; m.rev = false; }
+      break;
+    }
+    case 'm2secret': {
+      const m = s.m2; if (!m || m.st !== 'secret' || f !== m.thinker) break;
+      m.secret = String(a.secret).slice(0, 60); m.cat = a.cat; m.st = 'ask'; break;
+    }
+    case 'm2ask': {
+      const m = s.m2; if (!m || m.st !== 'ask' || f === m.thinker || m.qs.length >= MAX_Q) break;
+      const last = m.qs[m.qs.length - 1]; if (last && last.a == null) break;
+      m.qs.push({ q: String(a.q).slice(0, 120), a: null }); break;
+    }
+    case 'm2ans': {
+      const m = s.m2; if (!m || m.st !== 'ask' || f !== m.thinker) break;
+      const last = m.qs[m.qs.length - 1]; if (!last || last.a != null) break;
+      last.a = a.v; break;
+    }
+    case 'm2guess': {
+      const m = s.m2; if (!m || m.st !== 'ask' || f === m.thinker) break;
+      const last = m.qs[m.qs.length - 1]; if (last && last.a == null) break;
+      m.guess = String(a.g).slice(0, 60); m.st = 'judge'; break;
+    }
+    case 'm2judge': {
+      const m = s.m2; if (!m || m.st !== 'judge' || f !== m.thinker) break;
+      if (a.ok) { m.won = true; m.st = 'done'; s.stats.m2.total++; s.stats.m2.win++; fx(s, 'win'); }
+      else if (m.qs.length >= MAX_Q) { m.won = false; m.st = 'done'; s.stats.m2.total++; fx(s, 'lose'); }
+      else { m.qs.push({ q: 'Chute: ' + m.guess, a: 'nao', g: true }); m.st = 'ask'; fx(s, 'wrong'); }
+      break;
+    }
+    case 'm2giveup': {
+      const m = s.m2; if (!m || m.st !== 'ask' || f === m.thinker) break;
+      m.won = false; m.st = 'done'; s.stats.m2.total++; fx(s, 'lose'); break;
+    }
+    case 'm2again': {
+      if (!s.m2 || s.m2.st !== 'done') break; m2init(s, 1 - s.m2.thinker); break;
+    }
+  }
+}
+
+// ---------- despacho de ações ----------
+function act(t, data = {}, as) {
+  const a = { t, ...data };
+  if (role === 'local') { a.from = as == null ? 0 : +as; apply(a); }
+  else if (role === 'host') { a.from = 0; apply(a); }
+  else if (role === 'guest') {
+    if (net.conn && net.connected) { try { net.conn.send({ t: 'act', a }); } catch (e) { toast('Falha ao enviar… tentando reconectar'); } }
+    else toast('Sem conexão… tentando reconectar 🔄');
+  }
+}
+function apply(a) {
+  reduce(S, a); S.v++; save();
+  if (role === 'host' && net.conn && net.connected) { try { net.conn.send({ t: 'state', s: S }); } catch (e) {} }
+  render();
+}
+function save() {
+  if (role === 'host') store('s', 'knox-host-' + net.code, JSON.stringify(S));
+  if (role === 'local') store('s', 'knox-local', JSON.stringify(S));
+}
+
+// ---------- rede (PeerJS) ----------
+function startHost(a, b, resume) {
+  role = 'host'; me = 0;
+  net.code = resume ? resume.code : genCode();
+  S = resume ? resume.S : newState(a, b);
+  ui.lastFx = S.fx ? S.fx.id : null;
+  history.replaceState(null, '', '?sala=' + net.code);
+  save(); openHostPeer(!resume, 0); render();
+}
+function openHostPeer(isNew, tries) {
+  if (!window.Peer) { net.status = 'nopeer'; render(); return; }
+  net.status = 'abrindo';
+  const p = new Peer(PFX + net.code); net.peer = p;
+  p.on('open', () => { net.status = 'aberta'; render(); });
+  p.on('connection', c => {
+    if (net.conn && net.conn !== c) { try { net.conn.close(); } catch (e) {} }
+    net.conn = c;
+    c.on('open', () => { net.connected = true; try { c.send({ t: 'state', s: S }); } catch (e) {} toast(`${S.names[1]} entrou na sala! 💛`); render(); });
+    c.on('data', d => { if (d && d.t === 'act' && d.a) { d.a.from = 1; apply(d.a); } else if (d && d.t === 'hello') { try { c.send({ t: 'state', s: S }); } catch (e) {} } });
+    c.on('close', () => { if (net.conn === c) { net.connected = false; render(); } });
+    c.on('error', () => {});
+  });
+  p.on('disconnected', () => { if (!p.destroyed) setTimeout(() => { try { if (p.disconnected && !p.destroyed) p.reconnect(); } catch (e) {} }, 1500); });
+  p.on('error', e => {
+    if (e.type === 'peer-unavailable') return;
+    if (e.type === 'unavailable-id') {
+      try { p.destroy(); } catch (x) {}
+      if (isNew && tries < 4) {
+        store('s', 'knox-host-' + net.code, null);
+        net.code = genCode(true); history.replaceState(null, '', '?sala=' + net.code); save();
+        openHostPeer(true, tries + 1);
+      } else { net.status = 'reabrindo'; setTimeout(() => openHostPeer(false, tries + 1), 3000); }
+      render(); return;
+    }
+    net.status = 'erro'; render();
+    clearTimeout(net.retry);
+    net.retry = setTimeout(() => { if (p.destroyed || p.disconnected) { try { p.destroy(); } catch (x) {} openHostPeer(false, tries + 1); } }, 4000);
+  });
+}
+function startGuest(code) {
+  role = 'guest'; me = 1; net.code = code; S = null; net.connected = false;
+  history.replaceState(null, '', '?sala=' + code);
+  render();
+  if (!window.Peer) { net.status = 'nopeer'; render(); return; }
+  net.status = 'conectando';
+  const p = new Peer(); net.peer = p;
+  p.on('open', () => { if (!net.connected) connectGuest(); });
+  p.on('disconnected', () => { if (!p.destroyed) setTimeout(() => { try { if (p.disconnected && !p.destroyed) p.reconnect(); } catch (e) {} }, 1500); });
+  p.on('error', e => {
+    clearTimeout(net.retry);
+    if (e.type === 'peer-unavailable') { net.status = 'naoachou'; render(); net.retry = setTimeout(connectGuest, 3000); }
+    else { net.status = 'erro'; render(); net.retry = setTimeout(() => { if (!p.destroyed && p.disconnected) { try { p.reconnect(); } catch (x) {} } else connectGuest(); }, 4000); }
+  });
+}
+function connectGuest() {
+  const p = net.peer; if (!p || p.destroyed || p.disconnected || net.connected) return;
+  const c = p.connect(PFX + net.code, { reliable: true }); net.conn = c;
+  c.on('open', () => { net.connected = true; net.status = 'ok'; try { c.send({ t: 'hello' }); } catch (e) {} render(); });
+  c.on('data', d => {
+    if (d && d.t === 'state') { const first = !S; S = d.s; if (first) { ui.lastFx = S.fx ? S.fx.id : null; toast(`Conectado! Você é ${S.names[1]} 💛`); } render(); }
+  });
+  c.on('close', () => {
+    if (net.conn !== c) return;
+    net.connected = false; net.status = 'reconectando'; render();
+    clearTimeout(net.retry); net.retry = setTimeout(connectGuest, 2000);
+  });
+  c.on('error', () => {});
+}
+function startLocal(a, b, resume) {
+  role = 'local'; me = 0; S = resume || newState(a, b);
+  ui.lastFx = S.fx ? S.fx.id : null;
+  history.replaceState(null, '', '?local=1'); save(); render();
+}
+function leave() {
+  clearTimeout(net.retry);
+  try { net.peer && net.peer.destroy(); } catch (e) {}
+  if (role === 'host') store('s', 'knox-host-' + net.code, null);
+  if (role === 'local') store('s', 'knox-local', null);
+  Object.assign(net, { peer: null, conn: null, connected: false, code: null, status: '' });
+  role = 'none'; S = null;
+  history.replaceState(null, '', baseUrl());
+  render();
+}
+
+// ---------- quem pode o quê ----------
+const isMe = p => role === 'local' || me === p;
+const nm = p => esc(S.names[p]);
+
+// ---------- views ----------
+function vTop() {
+  if (!S || role === 'none') return '';
+  const p = affinity();
+  const online = role === 'local' ? '' : `<span class="dot ${net.connected ? 'on' : 'off'}" title="${net.connected ? 'Conectado' : 'Desconectado'}"></span>`;
+  return `<div class="topbar"><div class="in">
+    <div class="flex items-center justify-between gap-2">
+      <div class="font-bold truncate">${nm(0)} <span class="gold">♥</span> ${nm(1)}</div>
+      <div class="flex items-center gap-3 shrink-0">${online}<button data-a="leave" class="mut text-sm underline">Sair</button></div>
+    </div>
+    <div class="text-sm mt-1">${p == null ? '<span class="mut">Vocês combinaram</span> <b class="gold">—%</b> <span class="mut">· jogue pra descobrir</span>' : `<span class="mut">Vocês combinaram</span> <b class="gold text-lg">${p}%</b>`}</div>
+    <div class="bar"><i style="width:${p || 0}%"></i></div>
+  </div></div>`;
+}
+
+function vHome() {
+  const n0 = esc(store('l', 'knox-n0') || ''), n1 = esc(store('l', 'knox-n1') || '');
+  return `<div class="fade">
+    <div class="logo"><small>CARA A CARA</small><h1 class="goldtxt">Edição Casal</h1><div class="knox">KNOX</div></div>
+    <div class="card goldline">
+      <label class="fld">Seu nome<input id="n0" class="inp" maxlength="16" placeholder="Ex: Lucas" value="${n0}" autocomplete="off"></label>
+      <label class="fld">Nome dela<input id="n1" class="inp" maxlength="16" placeholder="Ex: Maria" value="${n1}" autocomplete="off"></label>
+      <div class="stack">
+        <button class="btn solid huge" data-a="create">💛 Criar Sala Privada</button>
+        <button class="btn dim sm" data-a="local">📱 Jogar juntos no mesmo celular</button>
+      </div>
+    </div>
+    <div class="sep">recebeu um código?</div>
+    <div class="flex gap-3">
+      <input id="code" class="inp code-in" maxlength="4" placeholder="AMOR" autocomplete="off" data-enter="join">
+      <button class="btn solid" style="width:auto;min-width:120px;margin-top:6px" data-a="join">Entrar</button>
+    </div>
+    <p class="mut text-center text-xs mt-8">Feito com 💛 para jogar cara a cara, mesmo à distância.</p>
+  </div>`;
+}
+
+function vWaiting() {
+  const st = { abrindo: 'Abrindo a sala…', aberta: '', reabrindo: 'Reabrindo a sala…', erro: 'Problema de conexão. Tentando de novo…', nopeer: 'Não deu pra carregar o módulo online (sem internet?). Use “Jogar no mesmo celular”.' }[net.status] || '';
+  const fileWarn = location.protocol === 'file:' ? `<div class="banner">⚠️ Você abriu o arquivo direto do computador. Para ela entrar pelo link, hospede este HTML (ex: GitHub Pages ou Netlify Drop). Pelo <b>código</b> funciona se ela tiver o mesmo arquivo aberto.</div>` : '';
+  return `<div class="fade text-center">
+    <p class="pill mt-4">SALA PRIVADA</p>
+    <h2 class="serif text-3xl mt-4">Sala criada!</h2>
+    <div class="tiles">${net.code.split('').map(c => `<span>${c}</span>`).join('')}</div>
+    ${fileWarn}
+    <div class="linkbox mb-4">${esc(roomLink())}</div>
+    <div class="stack">
+      <button class="btn solid" data-a="wainvite">💬 Enviar convite no WhatsApp</button>
+      <button class="btn dim sm" data-a="copy">📋 Copiar link</button>
+    </div>
+    <div class="card mt-6">
+      <div class="heartbeat">💛</div>
+      <p class="text-lg font-bold">Esperando ${nm(1)} entrar…</p>
+      <p class="mut text-sm mt-1">${esc(st) || 'Assim que ela abrir o link, o jogo começa.'}</p>
+    </div>
+  </div>`;
+}
+
+function vConnecting() {
+  const st = { conectando: 'Conectando à sala…', naoachou: 'Sala ainda não está aberta. Tentando de novo…', reconectando: 'Reconectando…', erro: 'Problema de conexão. Tentando de novo…', nopeer: 'Não deu pra carregar o módulo online. Verifique sua internet.' }[net.status] || 'Conectando…';
+  return `<div class="fade text-center mt-10">
+    <div class="logo"><small>CARA A CARA</small><h1 class="goldtxt">Edição Casal</h1></div>
+    <p class="mut">Sala</p>
+    <div class="tiles">${net.code.split('').map(c => `<span>${esc(c)}</span>`).join('')}</div>
+    <div class="spinner"></div>
+    <p class="text-lg font-bold">${st}</p>
+    <p class="mut text-sm mt-2">Deixe quem criou a sala com a página aberta.</p>
+    <button class="btn dim sm mt-8" data-a="leave">Voltar</button>
+  </div>`;
+}
+
+function vDisconnected() {
+  if (role === 'host' && !net.connected) return `<div class="banner">🔌 ${nm(1)} desconectou. Esperando voltar… (o jogo continua de onde parou)</div>`;
+  if (role === 'guest' && !net.connected) return `<div class="banner">🔌 Conexão perdida. Reconectando…</div>`;
+  return '';
+}
+
+function vLobby() {
+  const total = S.stats.m1.total + S.stats.m2.total;
+  return `<div class="fade">
+    ${vDisconnected()}
+    <h2 class="serif text-3xl text-center mt-4">Escolham o jogo</h2>
+    <p class="mut text-center text-sm mb-5">Qualquer um pode escolher — abre na tela dos dois.</p>
+    ${S.last ? `<div class="card goldline text-center mb-4"><span class="gold font-bold">Última rodada</span><br>${esc(S.last)}</div>` : ''}
+    <div class="stack">
+      <div class="card mode" data-a="mode" data-m="m1">
+        <span class="pill">MODO 1</span><h3>Quem é mais?</h3>
+        <p class="mut">${ROUNDS_M1} perguntas. Vocês dois respondem em segredo ao mesmo tempo… e revela se combinaram! 💞</p>
+      </div>
+      <div class="card mode" data-a="mode" data-m="m2">
+        <span class="pill">MODO 2</span><h3>20 Perguntas</h3>
+        <p class="mut">Um pensa em uma pessoa, lugar ou coisa. O outro tem 20 perguntas de SIM/NÃO pra adivinhar. 🕵️</p>
+        <p class="text-sm mt-2">Quem pensa agora: <b class="gold">${nm(S.m2 ? 1 - S.m2.thinker : S.m2th)}</b></p>
+      </div>
+      <button class="btn solid mt-4" data-a="mode" data-m="final" ${total ? '' : 'disabled'}>🏆 Ver Certificado do Casal</button>
+      ${total ? '' : '<p class="mut text-center text-xs">Joguem pelo menos uma rodada para liberar o certificado.</p>'}
+    </div>
+  </div>`;
+}
+
+function vHandoff(p, key, hint) {
+  return `<div class="fade text-center mt-10">
+    <div class="heartbeat">📱</div>
+    <h2 class="serif text-3xl mt-4">Passe o celular para<br><span class="goldtxt">${nm(p)}</span></h2>
+    <p class="mut mt-3">${hint || 'Sem espiar, hein! 👀'}</p>
+    <button class="btn solid huge mt-8" data-a="hand" data-k="${key}">Sou ${nm(p)}, pode mostrar</button>
+  </div>`;
+}
+
+function vM1() {
+  const m = S.m1, q = esc(Q_MAIS[m.order[m.i]]);
+  const head = `<div class="flex justify-between items-center mt-2"><span class="pill">QUEM É MAIS?</span><span class="mut font-bold">${m.i + 1} / ${m.order.length}</span></div>`;
+  if (!m.rev) {
+    let who = me, extra = '';
+    if (role === 'local') {
+      who = m.ans[0] == null ? 0 : 1;
+      if (who === 1 && ui.hand !== 'm1-' + m.i) return vHandoff(1, 'm1-' + m.i, `${nm(0)} já respondeu em segredo. Agora é sua vez!`);
+      extra = `<p class="text-center mut mb-2">Vez de <b class="gold">${nm(who)}</b> — responda em segredo 🤫</p>`;
+    }
+    const other = 1 - who;
+    if (m.ans[who] == null) {
+      const otherDone = role !== 'local' && m.ans[other] != null ? `<p class="text-center text-sm mt-5"><span class="gold">✓</span> ${nm(other)} já respondeu!</p>` : '';
+      return `<div class="fade">${vDisconnected()}${head}
+        <div class="question mt-6">${q}</div>${extra}
+        <div class="stack">
+          <button class="btn solid huge" data-a="m1ans" data-v="0" data-i="${m.i}" data-as="${who}">${nm(0)}</button>
+          <button class="btn solid huge" data-a="m1ans" data-v="1" data-i="${m.i}" data-as="${who}">${nm(1)}</button>
+        </div>${otherDone}</div>`;
+    }
+    return `<div class="fade">${vDisconnected()}${head}
+      <div class="question mt-6">${q}</div>
+      <div class="card text-center"><div class="heartbeat">⏳</div>
+        <p class="text-lg font-bold">Esperando ${nm(other)} responder…</p>
+        <p class="mut text-sm mt-1">Você escolheu <b class="gold">${nm(m.ans[who])}</b></p></div></div>`;
+  }
+  const ok = m.ans[0] === m.ans[1];
+  return `<div class="fade">${vDisconnected()}${head}
+    <div class="question mt-6" style="font-size:1.6rem">${q}</div>
+    <div class="reveal">
+      <div class="card ${ok ? 'goldline' : ''}"><p class="mut text-sm">${nm(0)} disse</p><p class="text-2xl font-extrabold gold mt-1">${nm(m.ans[0])}</p></div>
+      <div class="card ${ok ? 'goldline' : ''}"><p class="mut text-sm">${nm(1)} disse</p><p class="text-2xl font-extrabold gold mt-1">${nm(m.ans[1])}</p></div>
+    </div>
+    <div class="verdict ${ok ? 'goldtxt' : 'shake'}">${ok ? 'Combinaram! 💛' : 'Não combinaram 😅'}</div>
+    <button class="btn solid" data-a="m1next" data-i="${m.i}">${m.i + 1 >= m.order.length ? 'Ver resultado 🏁' : 'Próxima pergunta →'}</button>
+    <button class="mut text-sm underline w-full mt-6" data-a="mode" data-m="lobby">Voltar ao menu</button>
+  </div>`;
+}
+
+function vM2() {
+  const m = S.m2, th = m.thinker, gu = 1 - th;
+  const head = `<div class="flex justify-between items-center mt-2"><span class="pill">20 PERGUNTAS</span>${m.st !== 'secret' ? `<span class="mut font-bold">${m.qs.length} / ${MAX_Q}</span>` : ''}</div>`;
+
+  if (m.st === 'secret') {
+    if (!isMe(th)) return `<div class="fade">${vDisconnected()}${head}<div class="card text-center mt-8"><div class="heartbeat">🤫</div>
+      <p class="text-xl font-bold mt-2">${nm(th)} está pensando em algo…</p><p class="mut mt-2">Prepare suas perguntas de SIM ou NÃO!</p></div></div>`;
+    return `<div class="fade">${vDisconnected()}${head}
+      <h2 class="serif text-3xl mt-5">${nm(th)}, pense em algo</h2>
+      <p class="mut mb-4">${role === 'local' ? `${nm(gu)}, vira o rosto! 🙈 ` : ''}${nm(gu)} vai ter ${MAX_Q} perguntas para adivinhar.</p>
+      <div class="chips mb-4">${Object.keys(IDEAS).map(c => `<span class="chip ${ui.cat === c ? 'on' : ''}" data-a="cat" data-c="${esc(c)}">${esc(c)}</span>`).join('')}</div>
+      <input id="secret" class="inp" maxlength="60" placeholder="Seu segredo…" autocomplete="off" data-enter="m2secret">
+      <div class="stack mt-3">
+        <button class="btn dim sm" data-a="rand">🎲 Sortear uma ideia</button>
+        <button class="btn solid" data-a="m2secret">🔒 Confirmar segredo</button>
+      </div></div>`;
+  }
+
+  const hist = m.qs.length ? `<div class="card hist mt-4" id="hist">${m.qs.map((x, i) => `<div class="row"><span>${x.g ? '🎯' : `<span class="mut text-sm">${i + 1}.</span>`} ${esc(x.q)}</span>
+      <span class="ans ${x.a || 'wait'}">${x.a === 'sim' ? 'SIM' : x.a === 'nao' ? 'NÃO' : x.a === 'talvez' ? 'TALVEZ' : '…'}</span></div>`).join('')}</div>` : '';
+  const catInfo = `<p class="mt-4 text-lg"><b class="gold">${nm(gu)}</b> tenta adivinhar o que <b class="gold">${nm(th)}</b> pensou</p>
+    <p class="mut">Categoria: <span class="pill">${esc(m.cat)}</span></p>`;
+
+  if (m.st === 'done') {
+    return `<div class="fade">${head}
+      <div class="text-center mt-8">
+        <div style="font-size:4rem">${m.won ? '🎯' : '😈'}</div>
+        <h2 class="serif text-4xl mt-2 ${m.won ? 'goldtxt' : ''}">${m.won ? `${nm(gu)} acertou!` : `${nm(th)} venceu!`}</h2>
+        <p class="mut mt-3">O segredo era</p>
+        <p class="text-3xl font-extrabold gold mt-1">${esc(m.secret)}</p>
+        <p class="mut text-sm mt-2">${m.qs.filter(x => !x.g).length} perguntas usadas</p>
+      </div>
+      ${hist}
+      <div class="stack mt-6">
+        <button class="btn solid" data-a="m2again">🔁 Trocar papéis e jogar de novo</button>
+        <button class="btn dim sm" data-a="mode" data-m="lobby">Voltar ao menu</button>
+      </div></div>`;
+  }
+
+  const last = m.qs[m.qs.length - 1], pending = !!(last && last.a == null);
+  let thinkerUI = '', guesserUI = '';
+
+  if (isMe(th)) {
+    const secretLine = role === 'local'
+      ? `<div class="card text-center"><span class="mut text-sm">Segredo de ${nm(th)}:</span> <b class="gold text-xl ${ui.peek ? '' : 'masked'}">${esc(m.secret)}</b>
+         <button class="chip ml-2" data-a="peek">${ui.peek ? '🙈 esconder' : '👁 ver'}</button></div>`
+      : `<div class="card text-center goldline"><span class="mut text-sm">Seu segredo:</span> <b class="gold text-xl">${esc(m.secret)}</b></div>`;
+    if (m.st === 'judge') {
+      thinkerUI = `${secretLine}<div class="card mt-4 text-center goldline"><p class="mut">${nm(gu)} chutou</p>
+        <p class="serif text-3xl gold my-3">“${esc(m.guess)}”</p><p class="font-bold mb-4">Acertou?</p>
+        <div class="grid grid-cols-2 gap-3"><button class="btn solid huge" data-a="m2judge" data-ok="1">✅ Sim</button><button class="btn huge" data-a="m2judge" data-ok="0">❌ Não</button></div></div>`;
+    } else if (pending) {
+      thinkerUI = `${secretLine}<div class="card mt-4 goldline"><p class="mut text-sm">${role === 'local' ? `${nm(th)} responde:` : `${nm(gu)} perguntou:`}</p>
+        <p class="serif text-2xl my-3">${esc(last.q)}</p>
+        <div class="grid grid-cols-3 gap-2">
+          <button class="btn solid huge" style="font-size:1.2rem" data-a="m2ans" data-v="sim">SIM</button>
+          <button class="btn huge" style="font-size:1.2rem" data-a="m2ans" data-v="nao">NÃO</button>
+          <button class="btn dim huge" style="font-size:1rem" data-a="m2ans" data-v="talvez">TALVEZ</button>
+        </div></div>`;
+    } else if (role !== 'local') {
+      thinkerUI = `${secretLine}<div class="card mt-4 text-center"><div class="heartbeat">🤔</div><p class="font-bold">${nm(gu)} está pensando na próxima pergunta…</p></div>`;
+    } else thinkerUI = secretLine;
+  }
+
+  if (isMe(gu)) {
+    if (m.st === 'judge') {
+      if (role !== 'local') guesserUI = `<div class="card mt-4 text-center"><div class="heartbeat">🎯</div><p class="font-bold">Você chutou “${esc(m.guess)}”</p><p class="mut">Esperando ${nm(th)} confirmar…</p></div>`;
+    } else if (pending) {
+      if (role !== 'local') guesserUI = `<div class="card mt-4 text-center"><div class="heartbeat">⏳</div><p class="font-bold">Esperando ${nm(th)} responder…</p></div>`;
+    } else {
+      const left = MAX_Q - m.qs.length;
+      guesserUI = `<div class="card mt-4">
+        ${left > 0 ? `<p class="mut text-sm mb-2">${role === 'local' ? `${nm(gu)}, ` : ''}faça uma pergunta de SIM ou NÃO (${left} restantes)</p>
+        <input id="q" class="inp" maxlength="120" placeholder="Ex: É uma pessoa famosa?" autocomplete="off" data-enter="m2ask">
+        <button class="btn solid mt-3" data-a="m2ask">❓ Perguntar</button>`
+        : `<p class="gold font-bold text-center text-lg">Acabaram as perguntas! Último chute 👇</p>`}
+        <div class="sep">já sabe?</div>
+        <input id="g" class="inp" maxlength="60" placeholder="Seu chute…" autocomplete="off" data-enter="m2guess">
+        <button class="btn mt-3" data-a="m2guess">🎯 Chutar resposta</button>
+        <button class="mut text-sm underline w-full mt-4" data-a="m2giveup">Desistir 🏳️</button>
+      </div>`;
+    }
+  }
+  return `<div class="fade">${vDisconnected()}${head}${catInfo}
+    ${role === 'local' ? thinkerUI + guesserUI : (isMe(th) ? thinkerUI : guesserUI)}${hist}
+    <button class="mut text-sm underline w-full mt-6" data-a="mode" data-m="lobby">Voltar ao menu</button></div>`;
+}
+
+function certTitle(p) {
+  return p >= 90 ? 'Almas Gêmeas' : p >= 75 ? 'Sintonia Perfeita' : p >= 60 ? 'Casal em Sintonia' : p >= 40 ? 'Química em Construção' : 'Os Opostos se Atraem';
+}
+function vFinal() {
+  return `<div class="fade">
+    ${vDisconnected()}
+    <h2 class="serif text-3xl text-center mt-4 goldtxt">Fim de jogo!</h2>
+    <p class="mut text-center mb-4">Aqui está o certificado oficial de vocês 💛</p>
+    <img id="certImg" class="cert" alt="Certificado de Casal Sincronizado" ${ui.certUrl ? `src="${ui.certUrl}"` : ''}>
+    <div class="stack mt-5">
+      <button class="btn solid" data-a="share">💬 Compartilhar no WhatsApp</button>
+      <button class="btn" data-a="download">⬇️ Baixar como imagem</button>
+      <button class="btn dim sm" data-a="mode" data-m="lobby">Continuar jogando</button>
+      <button class="btn dim sm" data-a="reset">🔁 Zerar placar e recomeçar</button>
+    </div></div>`;
+}
+
+// ---------- certificado (canvas, funciona offline) ----------
+async function drawCert() {
+  try { await Promise.all([document.fonts.load('italic 700 80px "Playfair Display"'), document.fonts.load('700 30px Montserrat')]); } catch (e) {}
+  const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  const G = '#D4AF37', serif = '"Playfair Display", Georgia, serif', sans = 'Montserrat, Arial, sans-serif';
+  const p = affinity() ?? 0, [A, B] = S.names;
+  x.fillStyle = '#0A0A0A'; x.fillRect(0, 0, W, H);
+  const glow = x.createRadialGradient(W / 2, 520, 40, W / 2, 520, 760); glow.addColorStop(0, 'rgba(212,175,55,.20)'); glow.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = glow; x.fillRect(0, 0, W, H);
+  const gg = x.createLinearGradient(0, 0, W, H); gg.addColorStop(0, '#9C7C1E'); gg.addColorStop(.35, '#F3D77A'); gg.addColorStop(.65, '#D4AF37'); gg.addColorStop(1, '#9C7C1E');
+  x.strokeStyle = gg; x.lineWidth = 8; x.strokeRect(40, 40, W - 80, H - 80);
+  x.lineWidth = 2; x.strokeRect(64, 64, W - 128, H - 128);
+  x.fillStyle = G;
+  [[64, 64], [W - 64, 64], [64, H - 64], [W - 64, H - 64]].forEach(([cx, cy]) => { x.save(); x.translate(cx, cy); x.rotate(Math.PI / 4); x.fillRect(-12, -12, 24, 24); x.restore(); });
+  x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+  const spaced = (t, y, font, color, sp) => { x.font = font; x.fillStyle = color; const s = t.split('').join(String.fromCharCode(8202).repeat(sp)); x.fillText(s, W / 2, y); };
+  const fit = (t, y, max, size, weight, family, color) => { let s = size; do { x.font = `${weight} ${s}px ${family}`; s -= 2; } while (x.measureText(t).width > max && s > 20); x.fillStyle = color; x.fillText(t, W / 2, y); };
+  spaced('K N O X', 160, `800 34px ${sans}`, G, 2);
+  fit('Certificado de', 270, 860, 64, 'italic 700', serif, '#F5F1E6');
+  fit('Casal Sincronizado', 360, 900, 86, 'italic 700', serif, gg);
+  x.strokeStyle = G; x.lineWidth = 2; x.beginPath(); x.moveTo(300, 410); x.lineTo(500, 410); x.moveTo(580, 410); x.lineTo(780, 410); x.stroke();
+  x.font = `700 28px ${sans}`; x.fillStyle = G; x.fillText('♥', W / 2, 420);
+  x.font = `400 30px ${sans}`; x.fillStyle = '#bdb6a5'; x.fillText('Certificamos que', W / 2, 490);
+  fit(A, 585, 860, 78, '700', serif, '#F5F1E6');
+  x.font = `italic 700 48px ${serif}`; x.fillStyle = G; x.fillText('&', W / 2, 650);
+  fit(B, 735, 860, 78, '700', serif, '#F5F1E6');
+  x.font = `400 28px ${sans}`; x.fillStyle = '#bdb6a5'; x.fillText('estão oficialmente sincronizados no Cara a Cara', W / 2, 800);
+  // selo
+  const cy = 975, r = 130;
+  x.beginPath(); x.arc(W / 2, cy, r + 14, 0, Math.PI * 2); x.strokeStyle = 'rgba(212,175,55,.35)'; x.lineWidth = 2; x.stroke();
+  x.beginPath(); x.arc(W / 2, cy, r, 0, Math.PI * 2); x.fillStyle = '#120f05'; x.fill(); x.strokeStyle = gg; x.lineWidth = 6; x.stroke();
+  x.beginPath(); x.arc(W / 2, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * p / 100); x.strokeStyle = '#F3D77A'; x.lineWidth = 14; x.lineCap = 'round'; x.stroke();
+  x.font = `800 92px ${sans}`; x.fillStyle = gg; x.fillText(p + '%', W / 2, cy + 22);
+  x.font = `600 22px ${sans}`; x.fillStyle = '#bdb6a5'; x.fillText('DE AFINIDADE', W / 2, cy + 62);
+  fit('“' + certTitle(p) + '”', 1170, 860, 52, 'italic 700', serif, G);
+  const s1 = S.stats.m1, s2 = S.stats.m2, parts = [];
+  if (s1.total) parts.push(`Quem é mais: ${s1.match}/${s1.total}`);
+  if (s2.total) parts.push(`20 Perguntas: ${s2.win}/${s2.total} acertos`);
+  x.font = `400 26px ${sans}`; x.fillStyle = '#bdb6a5'; x.fillText(parts.join('   ·   '), W / 2, 1225);
+  x.font = `600 22px ${sans}`; x.fillStyle = '#7d7666';
+  x.fillText(new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) + '  ·  Cara a Cara · Edição Casal KNOX', W / 2, 1268);
+  return c;
+}
+async function refreshCert() {
+  const key = JSON.stringify([S.names, S.stats]);
+  if (ui.certKey === key && ui.certUrl) return;
+  ui.certKey = key;
+  const c = await drawCert(); ui.certUrl = c.toDataURL('image/png');
+  const img = $('#certImg'); if (img) img.src = ui.certUrl;
+}
+function certFileName() { return `certificado-casal-knox-${S.names.join('-').toLowerCase().replace(/[^a-z0-9-]+/gi, '')}.png`; }
+async function downloadCert() {
+  await refreshCert();
+  const a = document.createElement('a'); a.href = ui.certUrl; a.download = certFileName(); document.body.appendChild(a); a.click(); a.remove();
+  toast('Certificado baixado! 📥');
+}
+async function shareCert() {
+  await refreshCert();
+  const p = affinity() ?? 0;
+  const text = `💛 ${S.names[0]} & ${S.names[1]} combinaram ${p}% no CARA A CARA – Edição Casal KNOX! Somos oficialmente um Casal Sincronizado: “${certTitle(p)}” ✨`;
+  try {
+    const blob = await (await fetch(ui.certUrl)).blob();
+    const file = new File([blob], certFileName(), { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  toast('Dica: baixe a imagem e anexe na conversa 📎');
+}
+
+// ---------- efeitos: confete + texto ----------
+const cv = $('#confetti'), cx = cv.getContext('2d'); let parts = [], raf = null;
+function sizeCanvas() { cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio; cx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0); }
+addEventListener('resize', sizeCanvas); sizeCanvas();
+function confetti(n = 200) {
+  const W = innerWidth, H = innerHeight, cols = ['#D4AF37', '#F3D77A', '#9C7C1E', '#FFFFFF', '#E11D48', '#FB7185'];
+  for (let i = 0; i < n; i++) {
+    const side = i % 2 ? 1 : -1;
+    parts.push({ x: i < n / 2 ? W / 2 : (side > 0 ? 0 : W), y: i < n / 2 ? H * .45 : H * .8,
+      vx: i < n / 2 ? (Math.random() - .5) * 18 : -side * (4 + Math.random() * 9), vy: i < n / 2 ? -Math.random() * 16 - 4 : -Math.random() * 18 - 8,
+      s: Math.random() * 7 + 5, rot: Math.random() * 6, vr: (Math.random() - .5) * .3, c: pick(cols), heart: Math.random() < .22, life: 0 });
+  }
+  if (!raf) loop();
+}
+function loop() {
+  cx.clearRect(0, 0, innerWidth, innerHeight);
+  parts.forEach(p => {
+    p.vy += .35; p.vx *= .985; p.vy *= .985; p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life++;
+    cx.save(); cx.translate(p.x, p.y); cx.rotate(p.rot); cx.fillStyle = p.c;
+    if (p.heart) { cx.font = `${p.s * 3}px sans-serif`; cx.fillText('♥', 0, 0); }
+    else cx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2);
+    cx.restore();
+  });
+  parts = parts.filter(p => p.y < innerHeight + 40 && p.life < 400);
+  if (parts.length) raf = requestAnimationFrame(loop); else { raf = null; cx.clearRect(0, 0, innerWidth, innerHeight); }
+}
+let fxT;
+function showFx(text, ms = 1600) {
+  const el = $('#fx'); el.querySelector('.t').textContent = text; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(fxT); fxT = setTimeout(() => el.classList.remove('show'), ms);
+}
+function vibrate(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+function playFx(k) {
+  if (k === 'match') { showFx('Combinaram! 💛'); confetti(); vibrate([60, 40, 120]); }
+  else if (k === 'miss') { showFx('Ih… não combinaram 😅', 1300); vibrate(200); }
+  else if (k === 'win') { showFx('ACERTOU! 🎯'); confetti(260); vibrate([80, 50, 80, 50, 200]); }
+  else if (k === 'lose') { showFx('Não foi dessa vez 😈', 1500); }
+  else if (k === 'wrong') { showFx('Errou o chute! ❌', 1200); vibrate(150); }
+  else if (k === 'roundEnd') { showFx('Rodada completa! ✨', 1500); confetti(120); }
+}
+
+// ---------- render ----------
+function render() {
+  // preserva o que estava digitado e o foco
+  const saved = {}; app.querySelectorAll('input[id]').forEach(i => saved[i.id] = i.value);
+  const focusId = document.activeElement && document.activeElement.id;
+  let html;
+  if (role === 'none') html = vHome();
+  else if (role === 'guest' && !S) html = vConnecting();
+  else if (role === 'host' && !net.connected && S.phase === 'lobby' && S.v === 0) html = vWaiting();
+  else if (S.phase === 'm1' && S.m1) html = vM1();
+  else if (S.phase === 'm2' && S.m2) html = vM2();
+  else if (S.phase === 'final') html = vFinal();
+  else html = vLobby();
+  $('#top').innerHTML = vTop();
+  app.innerHTML = html;
+  for (const id in saved) { const el = document.getElementById(id); if (el) el.value = saved[id]; }
+  if (focusId) { const el = document.getElementById(focusId); if (el && el.tagName === 'INPUT') el.focus(); }
+  const h = $('#hist'); if (h) h.scrollTop = h.scrollHeight;
+  if (S && S.fx && S.fx.id !== ui.lastFx) { ui.lastFx = S.fx.id; playFx(S.fx.k); }
+  if (S && S.phase === 'final') refreshCert();
+}
+
+// ---------- eventos ----------
+function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function clear(id) { const el = document.getElementById(id); if (el) el.value = ''; }
+function names() {
+  const a = val('n0'), b = val('n1');
+  if (!a || !b) { toast('Coloca os dois nomes primeiro 💛'); (!a ? $('#n0') : $('#n1')).focus(); return null; }
+  store('l', 'knox-n0', a); store('l', 'knox-n1', b); return [a, b];
+}
+
+function handle(a, d) {
+  switch (a) {
+    case 'create': { const n = names(); if (n) startHost(n[0], n[1]); break; }
+    case 'local': { const n = names(); if (n) startLocal(n[0], n[1]); break; }
+    case 'join': {
+      const c = val('code').toUpperCase().replace(/[^A-Z]/g, '');
+      if (c.length !== 4) { toast('O código tem 4 letras'); return; }
+      startGuest(c); break;
+    }
+    case 'copy': {
+      const l = roomLink();
+      (navigator.clipboard ? navigator.clipboard.writeText(l) : Promise.reject()).then(() => toast('Link copiado! 📋'), () => prompt('Copie o link:', l));
+      break;
+    }
+    case 'wainvite': {
+      const text = `💛 ${S.names[0]} te chamou pro CARA A CARA – Edição Casal KNOX!\nEntra na nossa sala privada: ${roomLink()}\nCódigo: ${net.code}`;
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank'); break;
+    }
+    case 'leave': if (confirm('Sair da sala? ' + (role === 'guest' ? '' : 'O progresso desta sala será perdido.'))) leave(); break;
+    case 'mode': ui.peek = false; act('mode', { mode: d.m }); break;
+    case 'reset': if (confirm('Zerar o placar e começar de novo?')) act('reset'); break;
+    case 'm1ans': act('m1ans', { v: +d.v, i: +d.i }, d.as); break;
+    case 'm1next': act('m1next', { i: +d.i }); break;
+    case 'hand': ui.hand = d.k; render(); break;
+    case 'cat': ui.cat = d.c; render(); break;
+    case 'rand': { const el = $('#secret'); if (el) { el.value = pick(IDEAS[ui.cat] || IDEAS['Pessoa']); } break; }
+    case 'peek': ui.peek = !ui.peek; render(); break;
+    case 'm2secret': {
+      const s = val('secret'); if (!s) { toast('Escreve seu segredo primeiro 🤫'); return; }
+      ui.peek = false; clear('secret'); act('m2secret', { secret: s, cat: ui.cat }, S.m2.thinker); break;
+    }
+    case 'm2ask': {
+      const q = val('q'); if (!q) { toast('Escreve uma pergunta'); return; }
+      clear('q'); act('m2ask', { q: /[?？]$/.test(q) ? q : q + '?' }, 1 - S.m2.thinker); break;
+    }
+    case 'm2ans': act('m2ans', { v: d.v }, S.m2.thinker); break;
+    case 'm2guess': {
+      const g = val('g'); if (!g) { toast('Escreve seu chute 🎯'); return; }
+      clear('g'); act('m2guess', { g }, 1 - S.m2.thinker); break;
+    }
+    case 'm2judge': act('m2judge', { ok: d.ok === '1' }, S.m2.thinker); break;
+    case 'm2giveup': if (confirm('Desistir e ver o segredo?')) act('m2giveup', {}, 1 - S.m2.thinker); break;
+    case 'm2again': ui.peek = false; act('m2again'); break;
+    case 'download': downloadCert(); break;
+    case 'share': shareCert(); break;
+  }
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (b && !b.disabled) handle(b.dataset.a, b.dataset); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const t = e.target; if (t && t.dataset && t.dataset.enter) { e.preventDefault(); handle(t.dataset.enter, {}); }
+});
+document.addEventListener('input', e => { if (e.target.id === 'code') e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, ''); });
+
+// ---------- inicialização ----------
+(function boot() {
+  const qs = new URLSearchParams(location.search);
+  const sala = (qs.get('sala') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+  if (sala.length === 4) {
+    const saved = store('s', 'knox-host-' + sala);
+    if (saved) { try { startHost(null, null, { code: sala, S: JSON.parse(saved) }); return; } catch (e) {} }
+    startGuest(sala); return;
+  }
+  if (qs.get('local')) {
+    const saved = store('s', 'knox-local');
+    if (saved) { try { startLocal(null, null, JSON.parse(saved)); return; } catch (e) {} }
+  }
+  history.replaceState(null, '', baseUrl());
+  render();
+})();
+</script>
+</body>
+</html>
