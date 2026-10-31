@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0A0A0A">
 <title>Cara a Cara · Edição Casal KNOX</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
 <style>
@@ -127,12 +127,15 @@
 <script>
 // =====================================================================
 //  CARA A CARA · EDIÇÃO CASAL KNOX
-//  Multiplayer: PeerJS (WebRTC P2P). Quem cria a sala é o "host" e guarda
-//  o estado oficial; o convidado envia ações e recebe o estado de volta.
+//  Multiplayer: brokers MQTT públicos via WebSocket (funciona em 4G, Wi-Fi,
+//  qualquer rede). Quem cria a sala é o "host" e guarda o estado oficial;
+//  o convidado envia ações e recebe o estado de volta.
 //  Também existe o modo "mesmo celular", que funciona 100% offline.
 // =====================================================================
 
-const PFX = 'knox-casal-v1-';
+const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt'];
+const TOPIC = 'knox-casal-lm/v2/';
+const PING_MS = 4000, ALIVE_MS = 13000;
 const ROUNDS_M1 = 10;
 const MAX_Q = 20;
 
@@ -179,7 +182,7 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 let S = null;          // estado do jogo (compartilhado)
 let role = 'none';     // 'host' | 'guest' | 'local' | 'none'
 let me = 0;            // 0 = quem criou, 1 = convidado(a)
-const net = { peer: null, conn: null, connected: false, code: null, status: '', retry: null };
+const net = { clients: [], connected: false, code: null, status: '', timer: null, chk: null, checking: false, lastSeen: 0, seen: new Set() };
 const ui = { lastFx: null, hand: null, cat: 'Pessoa', peek: false, certKey: null, certUrl: null };
 
 function newState(a, b) {
@@ -265,13 +268,14 @@ function act(t, data = {}, as) {
   if (role === 'local') { a.from = as == null ? 0 : +as; apply(a); }
   else if (role === 'host') { a.from = 0; apply(a); }
   else if (role === 'guest') {
-    if (net.conn && net.connected) { try { net.conn.send({ t: 'act', a }); } catch (e) { toast('Falha ao enviar… tentando reconectar'); } }
-    else toast('Sem conexão… tentando reconectar 🔄');
+    if (!online()) { toast('Sem conexão… tentando reconectar 🔄'); return; }
+    if (!net.connected) toast(`${S.names[0]} parece offline… enviando mesmo assim`);
+    a.id = rid(); pub('g', { t: 'act', a });
   }
 }
 function apply(a) {
   reduce(S, a); S.v++; save();
-  if (role === 'host' && net.conn && net.connected) { try { net.conn.send({ t: 'state', s: S }); } catch (e) {} }
+  if (role === 'host') publishState();
   render();
 }
 function save() {
@@ -279,73 +283,97 @@ function save() {
   if (role === 'local') store('s', 'knox-local', JSON.stringify(S));
 }
 
-// ---------- rede (PeerJS) ----------
+// ---------- rede (MQTT público via WebSocket) ----------
+// Dois brokers ao mesmo tempo: se um cair, o outro segura. Mensagens duplicadas
+// são descartadas (ações pelo id, estado pela versão).
+const rid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const topic = k => TOPIC + net.code + '/' + k;
+const online = () => net.clients.some(c => c.connected);
+function netOpen(subs, onMsg, onConnect) {
+  if (!window.mqtt) { net.status = 'nopeer'; render(); return; }
+  net.clients = BROKERS.map(url => {
+    const c = mqtt.connect(url, { clientId: 'knox_' + rid(), reconnectPeriod: 2000, connectTimeout: 10000, keepalive: 30, clean: true });
+    c.on('connect', () => { c.subscribe(subs.map(topic), { qos: 1 }); onConnect(); checkAlive(); render(); });
+    c.on('close', () => { checkAlive(); render(); });
+    c.on('message', (t, buf) => {
+      if (!buf || !buf.length || !t.startsWith(TOPIC + net.code + '/')) return;
+      let d; try { d = JSON.parse(buf.toString()); } catch (e) { return; }
+      onMsg(t.slice(t.lastIndexOf('/') + 1), d);
+    });
+    c.on('error', () => {});
+    return c;
+  });
+}
+function pub(k, d, retain) {
+  const m = d === '' ? '' : JSON.stringify(d);
+  net.clients.forEach(c => { if (c.connected) c.publish(topic(k), m, { qos: 1, retain: !!retain }); });
+}
+function netClose() {
+  clearInterval(net.timer); clearTimeout(net.chk);
+  const cs = net.clients; net.clients = [];
+  setTimeout(() => cs.forEach(c => { try { c.end(true); } catch (e) {} }), 400);
+}
+function seen() { net.lastSeen = Date.now(); checkAlive(); }
+function checkAlive() {
+  const alive = online() && Date.now() - net.lastSeen < ALIVE_MS;
+  if (alive === net.connected) return;
+  net.connected = alive;
+  if (alive && role === 'host' && S) toast(`${S.names[1]} está na sala! 💛`);
+  render();
+}
+function publishState() { if (role === 'host' && !net.checking) pub('s', { s: S, ts: Date.now() }, true); }
+
 function startHost(a, b, resume) {
   role = 'host'; me = 0;
   net.code = resume ? resume.code : genCode();
   S = resume ? resume.S : newState(a, b);
+  if (!S.hid) S.hid = rid();
   ui.lastFx = S.fx ? S.fx.id : null;
   history.replaceState(null, '', '?sala=' + net.code);
-  save(); openHostPeer(!resume, 0); render();
-}
-function openHostPeer(isNew, tries) {
-  if (!window.Peer) { net.status = 'nopeer'; render(); return; }
-  net.status = 'abrindo';
-  const p = new Peer(PFX + net.code); net.peer = p;
-  p.on('open', () => { net.status = 'aberta'; render(); });
-  p.on('connection', c => {
-    if (net.conn && net.conn !== c) { try { net.conn.close(); } catch (e) {} }
-    net.conn = c;
-    c.on('open', () => { net.connected = true; try { c.send({ t: 'state', s: S }); } catch (e) {} toast(`${S.names[1]} entrou na sala! 💛`); render(); });
-    c.on('data', d => { if (d && d.t === 'act' && d.a) { d.a.from = 1; apply(d.a); } else if (d && d.t === 'hello') { try { c.send({ t: 'state', s: S }); } catch (e) {} } });
-    c.on('close', () => { if (net.conn === c) { net.connected = false; render(); } });
-    c.on('error', () => {});
-  });
-  p.on('disconnected', () => { if (!p.destroyed) setTimeout(() => { try { if (p.disconnected && !p.destroyed) p.reconnect(); } catch (e) {} }, 1500); });
-  p.on('error', e => {
-    if (e.type === 'peer-unavailable') return;
-    if (e.type === 'unavailable-id') {
-      try { p.destroy(); } catch (x) {}
-      if (isNew && tries < 4) {
-        store('s', 'knox-host-' + net.code, null);
-        net.code = genCode(true); history.replaceState(null, '', '?sala=' + net.code); save();
-        openHostPeer(true, tries + 1);
-      } else { net.status = 'reabrindo'; setTimeout(() => openHostPeer(false, tries + 1), 3000); }
-      render(); return;
+  save(); render();
+  net.checking = !resume;
+  netOpen(['s', 'g'], (k, d) => {
+    if (k === 's') {
+      // sala com esse código já está em uso por outro casal → troca o código
+      if (net.checking && d.s && d.s.hid !== S.hid && Date.now() - (d.ts || 0) < 12 * 3600e3) switchCode();
+      return;
     }
-    net.status = 'erro'; render();
-    clearTimeout(net.retry);
-    net.retry = setTimeout(() => { if (p.destroyed || p.disconnected) { try { p.destroy(); } catch (x) {} openHostPeer(false, tries + 1); } }, 4000);
-  });
+    if (k !== 'g') return;
+    seen();
+    if (d.t === 'act' && d.a) {
+      if (net.seen.has(d.a.id)) return;
+      net.seen.add(d.a.id); if (net.seen.size > 300) net.seen = new Set([...net.seen].slice(-100));
+      d.a.from = 1; apply(d.a);
+    } else if (d.t === 'hello') publishState();
+  }, () => { if (net.checking) endCheckSoon(); else publishState(); });
+  net.timer = setInterval(() => { pub('h', { t: 'ping' }); checkAlive(); }, PING_MS);
+}
+function endCheckSoon() {
+  clearTimeout(net.chk);
+  net.chk = setTimeout(() => { net.checking = false; publishState(); render(); }, 1500);
+}
+function switchCode() {
+  const old = ['s', 'g'].map(topic);
+  store('s', 'knox-host-' + net.code, null);
+  net.code = genCode(true);
+  history.replaceState(null, '', '?sala=' + net.code); save();
+  net.clients.forEach(c => { if (c.connected) { c.unsubscribe(old); c.subscribe(['s', 'g'].map(topic), { qos: 1 }); } });
+  endCheckSoon(); render();
 }
 function startGuest(code) {
-  role = 'guest'; me = 1; net.code = code; S = null; net.connected = false;
+  role = 'guest'; me = 1; net.code = code; S = null; net.connected = false; net.lastSeen = 0;
   history.replaceState(null, '', '?sala=' + code);
-  render();
-  if (!window.Peer) { net.status = 'nopeer'; render(); return; }
-  net.status = 'conectando';
-  const p = new Peer(); net.peer = p;
-  p.on('open', () => { if (!net.connected) connectGuest(); });
-  p.on('disconnected', () => { if (!p.destroyed) setTimeout(() => { try { if (p.disconnected && !p.destroyed) p.reconnect(); } catch (e) {} }, 1500); });
-  p.on('error', e => {
-    clearTimeout(net.retry);
-    if (e.type === 'peer-unavailable') { net.status = 'naoachou'; render(); net.retry = setTimeout(connectGuest, 3000); }
-    else { net.status = 'erro'; render(); net.retry = setTimeout(() => { if (!p.destroyed && p.disconnected) { try { p.reconnect(); } catch (x) {} } else connectGuest(); }, 4000); }
-  });
-}
-function connectGuest() {
-  const p = net.peer; if (!p || p.destroyed || p.disconnected || net.connected) return;
-  const c = p.connect(PFX + net.code, { reliable: true }); net.conn = c;
-  c.on('open', () => { net.connected = true; net.status = 'ok'; try { c.send({ t: 'hello' }); } catch (e) {} render(); });
-  c.on('data', d => {
-    if (d && d.t === 'state') { const first = !S; S = d.s; if (first) { ui.lastFx = S.fx ? S.fx.id : null; toast(`Conectado! Você é ${S.names[1]} 💛`); } render(); }
-  });
-  c.on('close', () => {
-    if (net.conn !== c) return;
-    net.connected = false; net.status = 'reconectando'; render();
-    clearTimeout(net.retry); net.retry = setTimeout(connectGuest, 2000);
-  });
-  c.on('error', () => {});
+  net.status = 'conectando'; render();
+  netOpen(['s', 'h'], (k, d) => {
+    if (k === 'h') { seen(); return; }
+    if (k !== 's' || !d.s) return;
+    if (S && d.s.hid === S.hid && d.s.v <= S.v) return;
+    const first = !S || d.s.hid !== S.hid;
+    S = d.s;
+    if (first) { ui.lastFx = S.fx ? S.fx.id : null; toast(`Você entrou como ${S.names[1]} 💛`); }
+    render();
+  }, () => pub('g', { t: 'hello' }));
+  net.timer = setInterval(() => { pub('g', { t: 'hello' }); checkAlive(); if (!S) render(); }, PING_MS);
 }
 function startLocal(a, b, resume) {
   role = 'local'; me = 0; S = resume || newState(a, b);
@@ -353,11 +381,10 @@ function startLocal(a, b, resume) {
   history.replaceState(null, '', '?local=1'); save(); render();
 }
 function leave() {
-  clearTimeout(net.retry);
-  try { net.peer && net.peer.destroy(); } catch (e) {}
-  if (role === 'host') store('s', 'knox-host-' + net.code, null);
+  if (role === 'host') { pub('s', '', true); store('s', 'knox-host-' + net.code, null); }
   if (role === 'local') store('s', 'knox-local', null);
-  Object.assign(net, { peer: null, conn: null, connected: false, code: null, status: '' });
+  netClose();
+  Object.assign(net, { connected: false, code: null, status: '', checking: false, lastSeen: 0 });
   role = 'none'; S = null;
   history.replaceState(null, '', baseUrl());
   render();
@@ -371,11 +398,11 @@ const nm = p => esc(S.names[p]);
 function vTop() {
   if (!S || role === 'none') return '';
   const p = affinity();
-  const online = role === 'local' ? '' : `<span class="dot ${net.connected ? 'on' : 'off'}" title="${net.connected ? 'Conectado' : 'Desconectado'}"></span>`;
+  const dot = role === 'local' ? '' : `<span class="dot ${net.connected ? 'on' : 'off'}" title="${net.connected ? 'Conectado' : 'Desconectado'}"></span>`;
   return `<div class="topbar"><div class="in">
     <div class="flex items-center justify-between gap-2">
       <div class="font-bold truncate">${nm(0)} <span class="gold">♥</span> ${nm(1)}</div>
-      <div class="flex items-center gap-3 shrink-0">${online}<button data-a="leave" class="mut text-sm underline">Sair</button></div>
+      <div class="flex items-center gap-3 shrink-0">${dot}<button data-a="leave" class="mut text-sm underline">Sair</button></div>
     </div>
     <div class="text-sm mt-1">${p == null ? '<span class="mut">Vocês combinaram</span> <b class="gold">—%</b> <span class="mut">· jogue pra descobrir</span>' : `<span class="mut">Vocês combinaram</span> <b class="gold text-lg">${p}%</b>`}</div>
     <div class="bar"><i style="width:${p || 0}%"></i></div>
@@ -404,7 +431,7 @@ function vHome() {
 }
 
 function vWaiting() {
-  const st = { abrindo: 'Abrindo a sala…', aberta: '', reabrindo: 'Reabrindo a sala…', erro: 'Problema de conexão. Tentando de novo…', nopeer: 'Não deu pra carregar o módulo online (sem internet?). Use “Jogar no mesmo celular”.' }[net.status] || '';
+  const st = net.status === 'nopeer' ? 'Não deu pra carregar o módulo online (sem internet?). Use “Jogar no mesmo celular”.' : online() ? '' : 'Conectando ao servidor…';
   const fileWarn = location.protocol === 'file:' ? `<div class="banner">⚠️ Você abriu o arquivo direto do computador. Para ela entrar pelo link, hospede este HTML (ex: GitHub Pages ou Netlify Drop). Pelo <b>código</b> funciona se ela tiver o mesmo arquivo aberto.</div>` : '';
   return `<div class="fade text-center">
     <p class="pill mt-4">SALA PRIVADA</p>
@@ -425,7 +452,7 @@ function vWaiting() {
 }
 
 function vConnecting() {
-  const st = { conectando: 'Conectando à sala…', naoachou: 'Sala ainda não está aberta. Tentando de novo…', reconectando: 'Reconectando…', erro: 'Problema de conexão. Tentando de novo…', nopeer: 'Não deu pra carregar o módulo online. Verifique sua internet.' }[net.status] || 'Conectando…';
+  const st = net.status === 'nopeer' ? 'Não deu pra carregar o módulo online. Verifique sua internet.' : online() ? 'Procurando a sala… confira o código e peça pra quem criou deixar a página aberta.' : 'Conectando ao servidor…';
   return `<div class="fade text-center mt-10">
     <div class="logo"><small>CARA A CARA</small><h1 class="goldtxt">Edição Casal</h1></div>
     <p class="mut">Sala</p>
@@ -439,7 +466,7 @@ function vConnecting() {
 
 function vDisconnected() {
   if (role === 'host' && !net.connected) return `<div class="banner">🔌 ${nm(1)} desconectou. Esperando voltar… (o jogo continua de onde parou)</div>`;
-  if (role === 'guest' && !net.connected) return `<div class="banner">🔌 Conexão perdida. Reconectando…</div>`;
+  if (role === 'guest' && !net.connected) return `<div class="banner">🔌 ${online() ? `Esperando ${nm(0)} ficar online… (deixe a página dele aberta)` : 'Conexão perdida. Reconectando…'}</div>`;
   return '';
 }
 
@@ -813,6 +840,13 @@ document.addEventListener('keydown', e => {
   const t = e.target; if (t && t.dataset && t.dataset.enter) { e.preventDefault(); handle(t.dataset.enter, {}); }
 });
 document.addEventListener('input', e => { if (e.target.id === 'code') e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, ''); });
+
+// celular voltou do bloqueio de tela → reconecta na hora
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || role === 'local' || role === 'none') return;
+  net.clients.forEach(c => { if (!c.connected) { try { c.reconnect(); } catch (e) {} } });
+  if (role === 'guest') pub('g', { t: 'hello' }); else publishState();
+});
 
 // ---------- inicialização ----------
 (function boot() {
